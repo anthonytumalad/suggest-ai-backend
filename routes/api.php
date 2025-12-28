@@ -4,12 +4,16 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\GrokController;
+use App\Http\Controllers\FeedbackController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
 Route::get('/forms', [FormController::class, 'index']);
 Route::get('/forms/{slug}', [FormController::class, 'show']);
+
+Route::get('/analysis/status/{jobId}', [GrokController::class, 'getAnalysisStatus'])
+        ->name('analysis.status');
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -25,4 +29,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //Grok routes
     Route::post('/summarize-feedback', [GrokController::class, 'analyzeFeedback']);
+
+    //Export routes
+    Route::get('/forms/{slug}/export/{format}', [FeedbackController::class, 'export'])
+         ->where('format', 'csv|excel|pdf|clipboard')
+         ->name('forms.export');
+
+    //Save Summary routes
+    Route::post('/forms/{slug}/summary', [FeedbackController::class, 'saveSummary']);
+
 });

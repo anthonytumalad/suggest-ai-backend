@@ -66,21 +66,23 @@ class GrokController extends Controller
 
     public function getAnalysisStatus(string $jobId): JsonResponse
     {
-        $result = cache()->get("analysis_result_{$jobId}");
+        $cacheKey = "analysis_result_{$jobId}";
+        $cached = cache()->get($cacheKey);
         
-        if (!$result) {
+        if (!$cached) {
             return response()->json([
                 'success' => true,
                 'status' => 'processing',
-                'message' => 'Analysis in progress'
+                'message' => 'Analysis in progress',
             ]);
         }
-        
+
         return response()->json([
-            'success' => $result['success'],
-            'data' => $result['results'] ?? null,
-            'error' => $result['error'] ?? null,
-            'status' => 'completed'
+            'success' => $cached['success'],
+            'data' => $cached['results'] ?? null,
+            'error' => $cached['error'] ?? null,
+            'status' => 'completed',
+            'model' => $cached['results']['model'] ?? null,
         ]);
     }
 

@@ -49,7 +49,6 @@ class GrokService
 
             $prompt = $this->createSummarizationPrompt($feedbackText, count($feedbacks));
 
-            // Call Grok API
             $response = $this->callGrokAPI($prompt);
 
             return [
@@ -80,14 +79,35 @@ class GrokService
     {
         $preparedText = '';
 
-        foreach ($feedbacks as $index => $feedback) {
-            if (is_array($feedback)) {
-                $text = $feedback['text'] ?? $feedback['feedback'] ?? $feedback['content'] ?? implode(' ', $feedback);
-            } else {
-                $text = (string)$feedback;
+        foreach ($feedbacks as $index => $item) {
+            if (is_string($item)) {
+                $decoded = json_decode($item, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $item = $decoded;
+                } else {
+                    $preparedText .= "Entry " . ($index + 1) . ": " . trim($item) . "\n\n";
+                    continue;
+                }
             }
 
-            $preparedText .= "Feedback " . ($index + 1) . ": " . $text . "\n\n";
+            if (!is_array($item)) {
+                $item = (array) $item;
+            }
+
+            $role = $item['role'] ?? 'unknown';
+            $rating = $item['rating'] ?? null;
+            $stars = $rating ? str_repeat('★', $rating) . str_repeat('☆', 5 - $rating) : 'No rating';
+            $mainFeedback = trim($item['feedback'] ?? $item['message'] ?? $item['content'] ?? $item['text'] ?? '[No main feedback]');
+            $suggestions = trim($item['suggestions'] ?? '');
+
+            $entry = "Entry " . ($index + 1) . " [Role: {$role}, Rating: " . ($rating ?? 'N/A') . "/5 {$stars}]:\n";
+            $entry .= "Main feedback: {$mainFeedback}\n";
+
+            if ($suggestions !== '') {
+                $entry .= "Suggestions: {$suggestions}\n";
+            }
+
+            $preparedText .= $entry . "\n";
         }
 
         return trim($preparedText);
@@ -95,71 +115,102 @@ class GrokService
 
     private function createSummarizationPrompt(string $feedbackText, int $feedbackCount): string
     {
-        return "You are analyzing {$feedbackCount} student feedback comments that may contain English, Tagalog, and Bicol languages.
+        return <<<PROMPT
+            You are an expert analyst reviewing {$feedbackCount} student and staff feedback entries for an educational institution. The feedback may be written in English, Tagalog, Bicol, or a mix of these languages.
+
+            Each feedback entry has:
+            - A main comment ("feedback" field)
+            - Optional suggestions for improvement ("suggestions" field)
+            - A rating from 1 to 5 stars
+            - A role: either "student", "staff", "teacher", and many more
+            - May be anonymous or from a named sender
 
             FEEDBACKS TO ANALYZE:
             {$feedbackText}
 
-            Perform the following analysis:
+            Analyze the feedback thoroughly and provide structured insights.
 
-            1. TOPIC MODELING: Identify 3-5 main topics from the feedback. For each topic include:
-               - topic_name: Clear topic label
-               - keyphrases: Array of 5-8 key phrases representing the topic
-               - sentiment: Overall sentiment for this topic (positive/negative/neutral/mixed)
-               - summary: Brief summary of what students are saying about this topic
-               - frequency: Percentage representation of how frequently this topic appears (0-100)
+            Perform the following:
 
-            2. OVERALL SENTIMENT: Provide overall sentiment analysis including:
-               - overall_sentiment: dominant sentiment across all feedback (Positive, Negative, Mixed, Neutral)
-               - sentiment_score: numerical score from -1 (very negative) to +1 (very positive)
-               - positive_aspects: array of positive themes
-               - negative_aspects: array of negative themes
-               - neutral_aspects: array of neutral observations
+            1. TOPIC MODELING
+            Identify 3-5 main topics discussed across all feedback.
+            For each topic:
+            - topic_name: Clear, concise label
+            - keyphrases: 6-8 representative phrases or words
+            - sentiment: positive / negative / neutral / mixed
+            - average_rating: Average star rating for feedback mentioning this topic (1-5)
+            - summary: Brief explanation of what people are saying
+            - frequency: Approximate percentage of feedback related to this topic (0-100%)
 
-            3. KEYPHRASE EXTRACTION: Extract important keyphrases across all feedback with:
-               - phrase: the keyphrase
-               - frequency: how many times it appears
-               - sentiment: associated sentiment
-            Present as a list, sorted by frequency descending.
+            2. OVERALL SENTIMENT ANALYSIS
+            - overall_sentiment: Dominant sentiment (Positive, Mostly Positive, Mixed, Mostly Negative, Negative)
+            - sentiment_score: Weighted score from -1.0 (very negative) to +1.0 (very positive), considering both text and ratings
+            - average_rating: Overall average star rating across all entries
+            - rating_distribution: Percentage of feedback by star rating (e.g., 1★: 10%, 2★: 15%, etc.)
+            - positive_aspects: List of commonly praised elements
+            - negative_aspects: List of common complaints or concerns
+            - suggestions_summary: Summary of recurring improvement suggestions
 
-            4. COMPREHENSIVE SUMMARY: Provide an executive summary of all feedback.
+            3. KEYPHRASE EXTRACTION
+            Extract the most frequent and meaningful phrases across main feedback and suggestions.
+            Return as list sorted by frequency (highest first):
+            - phrase: the keyphrase
+            - frequency: approximate count
+            - sentiment: positive / negative / neutral
+            - sources: mainly from "feedback", "suggestions", or "both"
 
+            4. ROLE-BASED INSIGHTS
+            Highlight any notable differences between student and staff feedback.
 
-            Also detect and note languages used.
+            5. LANGUAGE NOTES
+            Identify primary languages used and any notable code-switching patterns.
 
-            Output ONLY a valid JSON object with no additional text or explanations. The JSON structure must be:
+            6. COMPREHENSIVE EXECUTIVE SUMMARY
+            A clear, actionable 3-5 sentence summary for administrators.
+
+            Output ONLY a valid JSON object with exactly this structure — no extra text, explanations, or markdown:
 
             {
-                \"topic_modeling\": [
-                    {
-                        \"topic_name\": \"string\",
-                        \"keyphrases\": [\"string\", ...],
-                        \"sentiment\": \"string\",
-                        \"summary\": \"string\",
-                        \"frequency\": number
-                    },
-                    ...
-                ],
-                \"overall_sentiment\": {
-                    \"overall_sentiment\": \"string\",
-                    \"sentiment_score\": number,
-                    \"positive_aspects\": [\"string\", ...],
-                    \"negative_aspects\": [\"string\", ...],
-                    \"neutral_aspects\": [\"string\", ...]
+            "topic_modeling": [
+                {
+                "topic_name": "string",
+                "keyphrases": ["string"],
+                "sentiment": "positive|negative|neutral|mixed",
+                "average_rating": number,
+                "summary": "string",
+                "frequency": number
+                }
+            ],
+            "overall_sentiment": {
+                "overall_sentiment": "Positive|Mostly Positive|Mixed|Mostly Negative|Negative",
+                "sentiment_score": number,
+                "average_rating": number,
+                "rating_distribution": {
+                "1": number,
+                "2": number,
+                "3": number,
+                "4": number,
+                "5": number
+                },
+                "positive_aspects": ["string"],
+                "negative_aspects": ["string"],
+                "suggestions_summary": "string"
             },
-            \"keyphrase_extraction\": [
-                    {
-                        \"phrase\": \"string\",
-                        \"frequency\": integer,
-                        \"sentiment\": \"string\"
-                    },
-                    ...
-                ],
-                \"comprehensive_summary\": \"string\",
-                \"language_notes\": \"string\"
+            "keyphrase_extraction": [
+                {
+                "phrase": "string",
+                "frequency": integer,
+                "sentiment": "positive|negative|neutral",
+                "sources": "feedback|suggestions|both"
+                }
+            ],
+            "role_insights": "string",
+            "language_notes": "string",
+            "comprehensive_summary": "string"
             }
-            
-            Focus on understanding the meaning regardless of language mixing.";
+
+            Focus deeply on meaning, even with language mixing. Use ratings to reinforce or adjust text-based sentiment.
+        PROMPT;
     }
 
     private function callGrokAPI(string $prompt): array
@@ -200,13 +251,25 @@ class GrokService
 
         $data = $response->json();
 
+        $content = $data['choices'][0]['message']['content'] ?? null;
+
+        $parsedContent = json_decode(trim($content), true);
+
+        if (json_last_error() === JSON_ERROR_NONE && is_array($parsedContent)) {
+            return [
+                'content' => $parsedContent, 
+                'usage' => $data['usage'] ?? null,
+                'model' => $data['model'] ?? null
+            ];
+        }
+
         Log::info('Grok API response', [
             'usage' => $data['usage'] ?? null,
             'model' => $data['model'] ?? null
         ]);
 
         return [
-            'content' => $data['choices'][0]['message']['content'] ?? null,
+            'content' => $content,
             'usage' => $data['usage'] ?? null,
             'model' => $data['model'] ?? null
         ];
@@ -216,7 +279,7 @@ class GrokService
     {
         try {
             $response = $this->callGrokAPI("Just say 'Connection test successful' and nothing else.");
-            
+
             return [
                 'success' => true,
                 'message' => 'Grok API connection successful',

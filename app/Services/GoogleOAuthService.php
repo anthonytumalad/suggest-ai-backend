@@ -8,21 +8,32 @@ use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Laravel\Socialite\Two\GoogleProvider;
 
 class GoogleOAuthService
 {
     public function redirectToGoogle(): RedirectResponse
     {
-        return Socialite::driver('google')->redirect();
+        /** @var GoogleProvider $driver */
+        $driver = Socialite::driver('google');
+
+        $driver
+            ->with([
+                'prompt' => 'select_account', 
+                'hd' => 'thelewiscollege.edu.ph',
+            ])
+            ->stateless();
+        
+        return $driver->redirect();
     }
 
     public function handleGoogleCallback(Request $request): RedirectResponse
     {
         try {
-            /** @var \Laravel\Socialite\Two\GoogleProvider $driver */
+            /** @var GoogleProvider $driver */
             $driver = Socialite::driver('google');
 
-            $googleUser = $driver->user();
+            $googleUser = $driver->stateless()->user();
 
             Log::info('Google login successful', [
                 'email' => $googleUser->getEmail(),
@@ -32,11 +43,20 @@ class GoogleOAuthService
             Log::error('Google OAuth failed', [
                 'exception' => get_class($e),
                 'message'   => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
             ]);
 
             return redirect()
                 ->route('google.login')
-                ->withErrors('Authentication failed: ' . $e->getMessage());
+                ->withErrors(['oauth' => 'Authentication failed. Please try again.']);
+        }
+
+        if (!str_ends_with($googleUser->getEmail(), '@thelewiscollege.edu.ph')) {
+            Log::warning('Unauthorized Google login attempt', ['email' => $googleUser->getEmail()]);
+
+            return redirect()
+                ->route('google.login')
+                ->withErrors(['oauth' => 'Only @thelewiscollege.edu.ph accounts are allowed.']);
         }
 
         $sender = Sender::updateOrCreate(
@@ -48,17 +68,17 @@ class GoogleOAuthService
                 'refresh_token'     => $googleUser->refreshToken ?? null,
             ]
         );
+        Log::info('Intended URL after login: ' . session()->get('url.intended', 'NONE - using fallback'));
+        Auth::guard('sender')->login($sender, true);
 
-        Auth::guard('sender')->login($sender);
-
-        $request->session()->regenerate();
-
-        $intended = $request->session()->pull('url.intended');  
-
-        if ($intended && str_starts_with($intended, url('/tlc/form'))) {
-            return redirect($intended);
+        if ($request->has('continue')) {
+            $target = $request->query('continue');
+        } else {
+            $target = route('feedback.public', ['slug' => 'saso-office']);
         }
 
-        return redirect()->route('feedback.public', ['slug' => 'edi']);
+        Log::info('Redirecting to: ' . $target);
+
+        return redirect($target);    
     }
 }

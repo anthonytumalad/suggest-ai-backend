@@ -31,12 +31,20 @@ class FormController extends Controller
         $form = $this->formService->getFormBySlug($slug);
 
         return $this->formatForm($form);
-
     }
 
     public function store(Request $request): JsonResponse
     {
-        $form = $this->formService->createForm($request->all());
+        $data = [
+            'title'                        => $request->input('title'),
+            'description'                  => $request->input('description'),
+            'submission_preference_enabled'=> $request->boolean('submission_preference_enabled'),
+            'role_selection_enabled'       => $request->boolean('role_selection_enabled'),
+            'rating_enabled'               => $request->boolean('rating_enabled'),
+            'suggestions_enabled'         => $request->boolean('suggestions_enabled'),
+        ];
+
+        $form = $this->formService->createForm($data);
 
         return response()->json([
             'message' => 'Form created successfully',
@@ -68,17 +76,19 @@ class FormController extends Controller
     private function formatForm(Form $form): array
     {
         return [
-            'id'              => $form->id,
-            'title'           => $form->title,
-            'description'     => $form->description,
-            'slug'            => $form->slug,
-            'is_active'       => $form->is_active,
-            'is_read'         => $form->is_read,
-            'allow_anonymous' => $form->allow_anonymous,
-            'created_at'      => $form->created_at?->toDateTimeString(),
-            'updated_at'      => $form->updated_at?->toDateTimeString(),
-            'total_feedbacks' => (int) ($form->total_feedbacks ?? 0),
-            'new_feedbacks'   => (int) ($form->new_feedbacks ?? 0),
+            'id'                           => $form->id,
+            'title'                        => $form->title,
+            'description'                  => $form->description,
+            'slug'                         => $form->slug,
+            'is_active'                    => $form->is_active,
+            'submission_preference_enabled' => $form->submission_preference_enabled,
+            'role_selection_enabled'        => $form->role_selection_enabled,
+            'rating_enabled'               => $form->rating_enabled,
+            'suggestions_enabled'          => $form->suggestions_enabled,
+            'created_at'                   => $form->created_at?->toDateTimeString(),
+            'updated_at'                   => $form->updated_at?->toDateTimeString(),
+            'total_feedbacks'              => (int) ($form->total_feedbacks ?? 0),
+            'new_feedbacks'                => (int) ($form->new_feedbacks ?? 0),
         ];
     }
 
@@ -90,30 +100,33 @@ class FormController extends Controller
             $this->formService->markFeedbacksAsRead($form);
 
             return response()->json([
-                'id'               => $form->id,
-                'title'            => $form->title,
-                'description'      => $form->description ?? null,
-                'slug'             => $form->slug,
-                'is_active'        => $form->is_active,
-                'allow_anonymous'  => $form->allow_anonymous,
-                'created_at'       => $form->created_at?->toDateTimeString(),
-                'updated_at'       => $form->updated_at?->toDateTimeString(),
-                'total_feedbacks'  => (int) ($form->total_feedbacks ?? 0),
-                'new_feedbacks'    => 0,
-                'feedbacks'        => $form->feedbacks->map(fn($feedback) => [
-                    'id'            => $feedback->id,
-                    'feedback'      => $feedback->feedback,
-                    'role'          => $feedback->role,
-                    'rating'        => $feedback->rating,
-                    'suggestions'   => $feedback->suggestions,
-                    'is_anonymous'  => $feedback->is_anonymous,
-                    'is_read'       => $feedback->is_read,
-                    'created_at'    => $feedback->created_at->toDateTimeString(),
-                    'sender_email'  => $feedback->is_anonymous ? null : ($feedback->sender?->email ?? 'Unknown'),
-                    'sender_avatar' => $feedback->is_anonymous 
-                        ? null 
-                        : ($feedback->sender?->profile_picture 
-                            ?? 'https://ui-avatars.com/api/?name=' . urlencode($feedback->sender?->email) . '&background=6366f1&color=fff'),
+                'id'                           => $form->id,
+                'title'                        => $form->title,
+                'description'                  => $form->description ?? null,
+                'slug'                         => $form->slug,
+                'is_active'                    => $form->is_active,
+                'submission_preference_enabled' => $form->submission_preference_enabled,
+                'role_selection_enabled'        => $form->role_selection_enabled,
+                'rating_enabled'               => $form->rating_enabled,
+                'suggestions_enabled'          => $form->suggestions_enabled,
+                'created_at'                   => $form->created_at?->toDateTimeString(),
+                'updated_at'                   => $form->updated_at?->toDateTimeString(),
+                'total_feedbacks'              => (int) ($form->total_feedbacks ?? 0),
+                'new_feedbacks'                => 0,
+                'feedbacks'                    => $form->feedbacks->map(fn($feedback) => [
+                    'id'             => $feedback->id,
+                    'feedback'       => $feedback->feedback,
+                    'role'           => $feedback->role,
+                    'rating'         => $feedback->rating,
+                    'suggestions'    => $feedback->suggestions,
+                    'is_anonymous'   => $feedback->is_anonymous,
+                    'is_read'        => $feedback->is_read,
+                    'created_at'     => $feedback->created_at->toDateTimeString(),
+                    'sender_email'   => $feedback->is_anonymous ? null : ($feedback->sender?->email ?? 'Unknown'),
+                    'sender_avatar'  => $feedback->is_anonymous
+                        ? null
+                        : ($feedback->sender?->profile_picture
+                            ?? 'https://ui-avatars.com/api/?name=' . urlencode($feedback->sender?->email ?? '') . '&background=6366f1&color=fff'),
                 ])->toArray(),
             ]);
         } catch (\Exception $e) {
@@ -134,6 +147,4 @@ class FormController extends Controller
 
         return response($qr)->header('Content-type', 'image/svg+xml');
     }
-
-    
 }

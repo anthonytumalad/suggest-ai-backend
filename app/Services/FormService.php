@@ -40,11 +40,13 @@ class FormService
     public function createForm(array $data): Form
     {
         $validated = validator($data, [
-            'title'          => 'required|string|max:255',
-            'description'    => 'nullable|string',
-            'is_active'      => 'sometimes|boolean',
-            'is_read'        => 'sometimes|boolean',
-            'allow_anonymous'=> 'sometimes|boolean',
+            'title'                        => 'required|string|max:255',
+            'description'                  => 'nullable|string',
+            'is_active'                    => 'sometimes|boolean',
+            'submission_preference_enabled'=> 'sometimes|boolean',
+            'role_selection_enabled'        => 'sometimes|boolean',
+            'rating_enabled'               => 'sometimes|boolean',
+            'suggestions_enabled'          => 'sometimes|boolean',
         ])->validate();
 
         return Form::create($validated);
@@ -61,12 +63,14 @@ class FormService
     public function updateForm(Form $form, array $data): Form
     {
         $validated = validator($data, [
-            'title'          => 'sometimes|required|string|max:255',
-            'description'    => 'sometimes|nullable|string',
-            'slug'           => 'sometimes|required|string|unique:forms,slug,' . $form->id,
-            'is_active'      => 'sometimes|boolean',
-            'is_read'        => 'sometimes|boolean',
-            'allow_anonymous'=> 'sometimes|boolean',
+            'title'                        => 'sometimes|required|string|max:255',
+            'description'                  => 'sometimes|nullable|string',
+            'slug'                         => 'sometimes|required|string|unique:forms,slug,' . $form->id,
+            'is_active'                    => 'sometimes|boolean',
+            'submission_preference_enabled'=> 'sometimes|boolean',
+            'role_selection_enabled'        => 'sometimes|boolean',
+            'rating_enabled'               => 'sometimes|boolean',
+            'suggestions_enabled'          => 'sometimes|boolean',
         ])->validate();
 
         $form->update($validated);

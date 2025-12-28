@@ -60,6 +60,12 @@ return [
             'report' => false,
         ],
 
+        'temporary' => [
+            'driver' => 'local',
+            'root' => storage_path('app/temporary'),
+            'visibility' => 'private',
+        ],
+        
     ],
 
     /*

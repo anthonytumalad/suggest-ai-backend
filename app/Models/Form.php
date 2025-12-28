@@ -19,16 +19,19 @@ class Form extends Model
         'slug',
         'is_active',
         'is_read',
-        'allow_anonymous',
+        'submission_preference_enabled',
+        'role_selection_enabled',
+        'rating_enabled',
+        'suggestions_enabled',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_read' => 'boolean',
-        'allow_anonymous' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'submission_preference_enabled' => 'boolean',
+        'role_selection_enabled' => 'boolean',
+        'rating_enabled' => 'boolean',
+        'suggestions_enabled' => 'boolean',
     ];
 
     protected $dates = [
@@ -40,7 +43,10 @@ class Form extends Model
     protected $attributes = [
         'is_active' => true,
         'is_read' => false,
-        'allow_anonymous' => false,
+        'submission_preference_enabled' => true,
+        'role_selection_enabled' => true,
+        'rating_enabled' => true,
+        'suggestions_enabled' => true,
     ];
 
 
@@ -49,21 +55,35 @@ class Form extends Model
         parent::boot();
 
         static::creating(function (Form $form) {
-            if (!empty($form->slug)) {
-                return;
+            if (empty($form->slug)) {
+                $form->slug = $form->generateUniqueSlug($form->title);
             }
-
-            $baseSlug = Str::slug($form->title) ?: 'form';
-            $slug = $baseSlug;
-            $counter = 1;
-
-            while (static::withTrashed()->where('slug', $slug)->exists()) {
-                $slug = "{$baseSlug}-{$counter}";
-                $counter++;
-            }
-
-            $form->slug = $slug;
         });
+
+        static::updating(function (Form $form) {
+            if ($form->isDirty('title')) {
+                $form->slug = $form->generateUniqueSlug($form->title, $form->id);
+            }
+        });
+    }
+
+
+    private function generateUniqueSlug(string $title, ?int $excludeId = null): string
+    {
+        $baseSlug = Str::slug($title) ?: 'form';
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (static::withTrashed()
+            ->where('slug', $slug)
+            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
+            ->exists()
+        ) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
     }
 
     public function feedbacks(): HasMany

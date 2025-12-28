@@ -24,7 +24,7 @@ class AnalyzeFeedbackJob implements ShouldQueue
     public function __construct(
         private array $feedbacks,
         private string $jobId
-    ){}
+    ) {}
 
     /**
      * Execute the job.
@@ -33,13 +33,56 @@ class AnalyzeFeedbackJob implements ShouldQueue
     {
         Log::info('Processing feedback analysis job', ['job_id' => $this->jobId]);
 
-        $result = $grokService->analyzeFeedback($this->feedbacks);
-        cache()->put("analysis_result_{$this->jobId}", $result, now()->addHours(1));
+        try {
+            $rawResult = $grokService->analyzeFeedback($this->feedbacks);
 
-        Log::info('Feedback analysis job completed', ['job_id' => $this->jobId]);
+            if (!$rawResult['success']) {
+                throw new \Exception($rawResult['error'] ?? 'Analysis failed');
+            }
+
+            $grokSummary = $rawResult['results']['summary'];
+
+            $parsedSummary = is_string($grokSummary)
+                ? json_decode($grokSummary, true)
+                : $grokSummary;
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::warning('Failed to parse Grok JSON summary', [
+                    'job_id' => $this->jobId,
+                    'error' => json_last_error_msg()
+                ]);
+                $parsedSummary = ['raw_summary' => $grokSummary];
+            }
+
+            $summaryData = [
+                'summary' => $parsedSummary,
+                'model' => $rawResult['results']['model'] ?? 'grok-4-latest',
+                'feedback_count' => $rawResult['results']['feedback_count'] ?? count($this->feedbacks),
+                'usage' => $rawResult['results']['usage'] ?? null,
+            ];
+
+            cache()->put("analysis_result_{$this->jobId}", [
+                'success' => true,
+                'results' => $summaryData,
+                'error' => null,
+            ], now()->addHours(1));
+
+            Log::info('Feedback analysis job completed and cached', ['job_id' => $this->jobId]);
+        } catch (\Throwable $e) {
+            Log::error('Feedback analysis job failed', [
+                'job_id' => $this->jobId,
+                'error' => $e->getMessage()
+            ]);
+
+            cache()->put("analysis_result_{$this->jobId}", [
+                'success' => false,
+                'results' => null,
+                'error' => 'Analysis failed: ' . $e->getMessage(),
+            ], now()->addHours(1));
+        }
     }
 
-    public function failed(\Throwable $exception) : void
+    public function failed(\Throwable $exception): void
     {
         Log::error('Feedback analysis job failed', [
             'job_id' => $this->jobId,
