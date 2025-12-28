@@ -143,7 +143,7 @@ class FormController extends Controller
     {
         $form = $this->formService->getFormBySlug($slug);
 
-        $qr = QrCode::size(300)->generate(route('feedback.public', $slug));
+        $qr = app('qrcode')->size(300)->generate(route('feedback.public', $slug));
 
         return response($qr)->header('Content-type', 'image/svg+xml');
     }
