@@ -23,23 +23,12 @@ class FeedbackController extends Controller
     {
         $form = Form::where('slug', $slug)->firstOrFail();
 
-        $sender = auth('sender')->user();
-
-        Log::info('Session ID in show: ' . session()->getId());
-        Log::info('CSRF Token in show: ' . csrf_token());
-
-        return view('feedbackForm', compact('form', 'sender'));
+        return view('feedbackForm', compact('form'));
     }
 
     public function store(string $slug, Request $request)
     {
-        Log::info('Session ID in store: ' . session()->getId());
-        Log::info('Expected CSRF Token in store: ' . csrf_token());
-        Log::info('Received CSRF Token: ' . $request->input('_token'));
-        Log::info('Session exists: ' . ($request->hasSession() ? 'yes' : 'no'));
-        Log::info('Session data keys: ' . implode(', ', array_keys(session()->all())));
-        Log::info('All request input keys: ' . implode(', ', array_keys($request->all())));
-
+    
         try {
             $this->feedbackService->submitFeedback($slug, $request->only([
                 'role',
@@ -52,6 +41,7 @@ class FeedbackController extends Controller
             $form = Form::where('slug', $slug)->firstOrFail();
 
             return view('feedbackSuccess', compact('form'));
+
         } catch (ValidationException $e) {
             return back()
                 ->withErrors($e->errors())

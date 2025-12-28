@@ -18,32 +18,24 @@ class FeedbackService
     {
         $form = Form::where('slug', $slug)->firstOrFail();
 
-        $isLoggedIn = Auth::guard('sender')->check();
-
         $validated = validator($data, [
             'role'         => 'required|in:student,teacher,staff',
             'rating'       => 'required|integer|between:1,5',
             'feedback'     => 'required|string|min:10',
             'suggestions'  => 'nullable|string',
-            'is_anonymous' => 'required|in:0,1,true,false',
+            'is_anonymous' => 'required|boolean',
         ])->validate();
 
-        $isAnonymous = in_array($validated['is_anonymous'], ['1', 'true', true], true);
-
-        $feedback = Feedback::create([
+        return Feedback::create([
             'form_id'      => $form->id,
-            'sender_id'    => $isLoggedIn && !$isAnonymous
-                ? Auth::guard('sender')->id()
-                : null,
+            'sender_id'    => null, // GUEST
             'role'         => $validated['role'],
             'rating'       => $validated['rating'],
             'feedback'     => $validated['feedback'],
             'suggestions'  => $validated['suggestions'] ?? null,
-            'is_anonymous' => $isAnonymous,
+            'is_anonymous' => $validated['is_anonymous'],
             'is_read'      => false,
         ]);
-
-        return $feedback->fresh();
     }
 
     public function saveSummary(
