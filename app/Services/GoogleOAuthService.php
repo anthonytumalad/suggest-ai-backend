@@ -38,8 +38,37 @@ class GoogleOAuthService
                 'email' => $googleUser->getEmail(),
                 'name'  => $googleUser->getName(),
             ]);
+
+            if (!$googleUser->getEmail() || !str_ends_with($googleUser->getEmail(), '@thelewiscollege.edu.ph')) {
+                Log::warning('Unauthorized Google login attempt', ['email' => $googleUser->getEmail() ?? 'none']);
+
+                return redirect()
+                    ->route('google.login')
+                    ->withErrors(['oauth' => 'Only @thelewiscollege.edu.ph accounts are allowed.']);
+            }
+
+            $sender = Sender::updateOrCreate(
+                ['email' => $googleUser->getEmail()],
+                [
+                    'google_id'         => $googleUser->getId(),
+                    'name'              => $googleUser->getName(),
+                    'access_granted_at' => now(),
+                    'refresh_token'     => $googleUser->refreshToken ?? null,
+                ]
+            );
+
+            Auth::guard('sender')->login($sender, true);
+
+            $target = $request->has('continue')
+            ? $request->query('continue')
+            : route('feedback.public', ['slug' => 'saso-office']);
+
+            Log::info('Google login successful - redirecting to: ' . $target);
+
+            return redirect($target);
+
         } catch (\Exception $e) {
-            Log::error('Google OAuth failed', [
+            Log::error('Google OAuth callback failed entirely', [
                 'exception' => get_class($e),
                 'message'   => $e->getMessage(),
                 'trace'     => $e->getTraceAsString(),
@@ -47,37 +76,7 @@ class GoogleOAuthService
 
             return redirect()
                 ->route('google.login')
-                ->withErrors(['oauth' => 'Authentication failed. Please try again.']);
+                ->withErrors(['oauth' => 'Login failed. Please try again.']);
         }
-
-        if (!str_ends_with($googleUser->getEmail(), '@thelewiscollege.edu.ph')) {
-            Log::warning('Unauthorized Google login attempt', ['email' => $googleUser->getEmail()]);
-
-            return redirect()
-                ->route('google.login')
-                ->withErrors(['oauth' => 'Only @thelewiscollege.edu.ph accounts are allowed.']);
-        }
-
-        $sender = Sender::updateOrCreate(
-            ['email' => $googleUser->getEmail()],
-            [
-                'google_id'         => $googleUser->getId(),
-                'name'              => $googleUser->getName(),
-                'access_granted_at' => now(),
-                'refresh_token'     => $googleUser->refreshToken ?? null,
-            ]
-        );
-        Log::info('Intended URL after login: ' . session()->get('url.intended', 'NONE - using fallback'));
-        Auth::guard('sender')->login($sender, true);
-
-        if ($request->has('continue')) {
-            $target = $request->query('continue');
-        } else {
-            $target = route('feedback.public', ['slug' => 'saso-office']);
-        }
-
-        Log::info('Redirecting to: ' . $target);
-
-        return redirect($target);    
     }
 }
