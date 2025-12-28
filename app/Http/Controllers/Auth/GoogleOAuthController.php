@@ -4,25 +4,25 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Services\GoogleOAuthService;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class GoogleOAuthController extends Controller
 {
-    protected GoogleOAuthService $googleOAuthService;
+    protected GoogleOAuthService $service;
 
-    public function __construct(GoogleOAuthService $googleOAuthService)
+    public function __construct(GoogleOAuthService $service)
     {
-        $this->googleOAuthService = $googleOAuthService;
+        $this->service = $service;
     }
 
     public function redirectToGoogle(): RedirectResponse
     {
-        return $this->googleOAuthService->redirectToGoogle();
+        return $this->service->redirectToGoogle();
     }
 
     public function handleGoogleCallback(Request $request): RedirectResponse
     {
-        return $this->googleOAuthService->handleGoogleCallback($request);
+        return $this->service->handleGoogleCallback($request);
     }
 }

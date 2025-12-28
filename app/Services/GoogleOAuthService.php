@@ -13,6 +13,7 @@ class GoogleOAuthService
     public function redirectToGoogle(): RedirectResponse
     {
         return Socialite::driver('google')
+            ->stateless()
             ->with([
                 'prompt' => 'select_account',
                 'hd' => 'thelewiscollege.edu.ph',
@@ -20,12 +21,13 @@ class GoogleOAuthService
             ->redirect();
     }
 
-    public function handleGoogleCallback(Request $request)
+    public function handleGoogleCallback(Request $request): RedirectResponse
     {
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
 
-            if (!$googleUser->getEmail() || !str_ends_with($googleUser->getEmail(), '@thelewiscollege.edu.ph')) {
+            // Only allow @thelewiscollege.edu.ph emails
+            if (! $googleUser->getEmail() || ! str_ends_with($googleUser->getEmail(), '@thelewiscollege.edu.ph')) {
                 return redirect()->route('google.login')
                     ->withErrors(['oauth' => 'Only @thelewiscollege.edu.ph accounts are allowed.']);
             }
@@ -33,16 +35,22 @@ class GoogleOAuthService
             $sender = Sender::updateOrCreate(
                 ['email' => $googleUser->getEmail()],
                 [
-                    'google_id' => $googleUser->getId(),
                     'name' => $googleUser->getName(),
+                    'google_id' => $googleUser->getId(),
+                    'profile_picture' => $googleUser->getAvatar(),
+                    'access_granted_at' => now(),
+                    'refresh_token' => $googleUser->refreshToken ?? null,
                 ]
             );
 
             Auth::guard('sender')->login($sender, true);
 
+            // Redirect to intended URL or homepage
             return redirect($request->session()->pull('url.intended', '/'));
+
         } catch (\Exception $e) {
-            \Log::error('Google OAuth callback error: ' . $e->getMessage(), [
+            \Log::error('Google OAuth callback failed', [
+                'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
 

@@ -11,10 +11,10 @@ class EnsureSenderExists
     public function handle(Request $request, Closure $next)
     {
         if (! Auth::guard('sender')->check()) {
-            // Store the full URL the user is trying to access
+            // Save the page the user was trying to access
             $request->session()->put('url.intended', $request->fullUrl());
 
-            // Redirect to Google login WITHOUT adding ?continue=
+            // Redirect to Google login
             return redirect()->route('google.login');
         }
 

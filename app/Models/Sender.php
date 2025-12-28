@@ -12,6 +12,7 @@ class Sender extends Authenticatable
     protected $table = 'senders';
 
     protected $fillable = [
+        'name',
         'email',
         'google_id',
         'access_granted_at',
