@@ -19,10 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        env('FRONTEND_URL'), 
-        'https://suggest-ai-panel.on-forge.com'
-    ],
+    'allowed_origins' => ['https://suggest-ai-panel.on-forge.com'],
 
     'allowed_origins_patterns' => [],
 
