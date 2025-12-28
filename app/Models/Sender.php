@@ -11,33 +11,24 @@ class Sender extends Authenticatable
 
     protected $table = 'senders';
 
+    // Only the fields we actually need for login
     protected $fillable = [
         'name',
         'email',
         'google_id',
-        'access_granted_at',
-        'profile_picture',
-        'refresh_token'
-    ];
-
-    protected $casts = [
-        'created_at' => 'datetime',
-        'access_granted_at' => 'datetime',
-        'updated_at' => 'datetime',
-    ];
-
-    protected $dates = [
-        'created_at',
-        'access_granted_at' => 'datetime',
-        'updated_at' => 'datetime',
     ];
 
     protected $hidden = [
-        'refresh_token',
         'google_id',
         'remember_token',
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    // Relationships
     public function feedbacks()
     {
         return $this->hasMany(Feedback::class, 'sender_id');

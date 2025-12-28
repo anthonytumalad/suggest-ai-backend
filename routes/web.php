@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\GoogleOAuthController;
 Route::get('/auth/google', [GoogleOAuthController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('/auth/google/callback', [GoogleOAuthController::class, 'handleGoogleCallback'])->name('google.callback');
 
+
 Route::get('/tlc/qrcode/{slug}', [FormController::class, 'qr'])
     ->name('feedback.qrcode');
 
