@@ -2,10 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FeedbackController;
-use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\Auth\GoogleOAuthController;
-use Illuminate\Support\Facades\Log;
 
 Route::get('/auth/google', [GoogleOAuthController::class, 'redirectToGoogle'])
     ->name('google.login');
@@ -25,4 +23,3 @@ Route::middleware('ensure.sender')->group(function () {
     Route::post('/tlc/form/{slug}/submit', [FeedbackController::class, 'store'])
         ->name('feedback.store');
 });
-

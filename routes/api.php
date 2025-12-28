@@ -15,7 +15,7 @@ Route::get('/forms/{slug}', [FormController::class, 'show']);
 Route::get('/analysis/status/{jobId}', [GrokController::class, 'getAnalysisStatus'])
         ->name('analysis.status');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth')->group(function () {
 
     //Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -38,4 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
     //Save Summary routes
     Route::post('/forms/{slug}/summary', [FeedbackController::class, 'saveSummary']);
 
+});
+
+Route::post('/test-no-csrf', function () {
+    return response()->json(['message' => 'CSRF is disabled! This works.']);
 });
