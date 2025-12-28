@@ -36,12 +36,6 @@ class AuthService
             ]);
         }
 
-        if ($request->hasSession()) {
-            $request->session()->regenerate();
-        } else {
-            Log::warning('Session regeneration skipped: No session store available on request.');
-        }
-
         return Auth::user();
     }
 
@@ -67,17 +61,6 @@ class AuthService
 
     public function logout(Request $request): void
     {
-        Auth::guard('web')->logout();
-        if ($request->hasSession()) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-        }
-    }
-
-    public function me(Request $request)
-    {
-        return response()->json([
-            'user' => $request->user(),
-        ]);
+        $request->user()->currentAccessToken()->delete();
     }
 }

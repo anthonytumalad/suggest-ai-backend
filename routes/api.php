@@ -15,7 +15,7 @@ Route::get('/forms/{slug}', [FormController::class, 'show']);
 Route::get('/analysis/status/{jobId}', [GrokController::class, 'getAnalysisStatus'])
         ->name('analysis.status');
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
 
     //Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -40,6 +40,3 @@ Route::middleware('auth')->group(function () {
 
 });
 
-Route::post('/test-no-csrf', function () {
-    return response()->json(['message' => 'CSRF is disabled! This works.']);
-});
