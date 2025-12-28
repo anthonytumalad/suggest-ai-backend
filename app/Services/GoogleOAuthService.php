@@ -19,34 +19,27 @@ class GoogleOAuthService
 
     public function handleGoogleCallback(Request $request): RedirectResponse
     {
-        try {
-            // Get user info from Google
-            $googleUser = Socialite::driver('google')->stateless()->user();
+        $googleUser = Socialite::driver('google')->stateless()->user();
 
-            // Only allow @thelewiscollege.edu.ph accounts
-            if (!$googleUser->getEmail() || !str_ends_with($googleUser->getEmail(), '@thelewiscollege.edu.ph')) {
-                return redirect()->route('google.login')
-                    ->withErrors(['oauth' => 'Only @thelewiscollege.edu.ph accounts are allowed.']);
-            }
-
-            // Create or update sender
-            $sender = Sender::updateOrCreate(
-                ['email' => $googleUser->getEmail()],
-                [
-                    'google_id' => $googleUser->getId(),
-                    'name'      => $googleUser->getName(),
-                ]
-            );
-
-            // Login sender
-            Auth::guard('sender')->login($sender, true);
-
-            // Redirect to intended URL or default
-            return redirect()->intended('/');
-        } catch (\Exception $e) {
-            \Log::error('Google OAuth error: '.$e->getMessage());
+        // Only allow your domain
+        if (! str_ends_with($googleUser->getEmail(), '@thelewiscollege.edu.ph')) {
             return redirect()->route('google.login')
-                ->withErrors(['oauth' => 'Login failed. Please try again.']);
+                ->withErrors(['oauth' => 'Only @thelewiscollege.edu.ph accounts are allowed.']);
         }
+
+        // Create or update sender
+        $sender = Sender::updateOrCreate(
+            ['email' => $googleUser->getEmail()],
+            [
+                'name' => $googleUser->getName(),
+                'google_id' => $googleUser->getId(),
+            ]
+        );
+
+        // Log in
+        Auth::guard('sender')->login($sender, true);
+
+        // Redirect to originally intended URL
+        return redirect()->intended('/');
     }
 }
