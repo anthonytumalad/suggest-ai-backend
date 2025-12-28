@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('forms', function (Blueprint $table) {
+        Schema::create('feedback_summaries', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->string('slug')->unique();
+            $table->foreignId('form_id')->constrained('forms')->cascadeOnDelete();
+            $table->json('summary_data')->nullable();
+            $table->unsignedInteger('feedback_count')->default(0);
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('forms');
+        Schema::dropIfExists('feedback_summaries');
     }
 };
