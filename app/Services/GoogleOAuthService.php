@@ -17,13 +17,13 @@ class GoogleOAuthService
         /** @var GoogleProvider $driver */
         $driver = Socialite::driver('google');
 
+        // Remove stateless() if you want session-based redirect
         return $driver
             ->with([
                 'prompt' => 'select_account',
                 'hd' => 'thelewiscollege.edu.ph',
             ])
-            ->stateless()
-            ->redirect(); 
+            ->redirect();
     }
 
     public function handleGoogleCallback(Request $request): RedirectResponse
@@ -32,7 +32,7 @@ class GoogleOAuthService
             /** @var GoogleProvider $driver */
             $driver = Socialite::driver('google');
 
-            $googleUser = $driver->stateless()->user();
+            $googleUser = $driver->user();
 
             Log::info('Google login successful', [
                 'email' => $googleUser->getEmail(),
@@ -47,6 +47,7 @@ class GoogleOAuthService
                     ->withErrors(['oauth' => 'Only @thelewiscollege.edu.ph accounts are allowed.']);
             }
 
+            // Create or update sender
             $sender = Sender::updateOrCreate(
                 ['email' => $googleUser->getEmail()],
                 [
@@ -59,16 +60,15 @@ class GoogleOAuthService
 
             Auth::guard('sender')->login($sender, true);
 
-            $target = $request->has('continue')
-            ? $request->query('continue')
-            : route('feedback.public', ['slug' => 'saso-office']);
+            // Redirect to intended URL stored in session, fallback to default
+            $target = $request->session()->pull('url.intended', route('feedback.public', ['slug' => 'saso-office']));
 
             Log::info('Google login successful - redirecting to: ' . $target);
 
             return redirect($target);
 
         } catch (\Exception $e) {
-            Log::error('Google OAuth callback failed entirely', [
+            Log::error('Google OAuth callback failed', [
                 'exception' => get_class($e),
                 'message'   => $e->getMessage(),
                 'trace'     => $e->getTraceAsString(),
