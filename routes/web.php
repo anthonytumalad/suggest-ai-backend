@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Auth\GoogleOAuthController;
+use App\Http\Controllers\GoogleOAuthController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FormController;
 use Illuminate\Support\Facades\Route;
