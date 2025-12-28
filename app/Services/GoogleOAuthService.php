@@ -17,12 +17,13 @@ class GoogleOAuthService
         /** @var GoogleProvider $driver */
         $driver = Socialite::driver('google');
 
-        $driver = $driver->with([
-            'prompt' => 'select_account',
-            'hd' => 'thelewiscollege.edu.ph',
-        ])->stateless();
-
-        return $driver->redirect();
+        return $driver
+            ->with([
+                'prompt' => 'select_account',
+                'hd' => 'thelewiscollege.edu.ph',
+            ])
+            ->stateless()
+            ->redirect(); 
     }
 
     public function handleGoogleCallback(Request $request): RedirectResponse
