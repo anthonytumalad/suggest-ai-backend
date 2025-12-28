@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\AuthService;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -17,11 +18,22 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $user = $this->authService->authenticate($request);
+        try {
+            $user = $this->authService->authenticate($request);
 
-        return response()->json([
-            'user' => $user,
-        ]);
+            $token = $user->createToken('spa-token')->plainTextToken;
+
+            return response()->json([
+                'user' => $user,
+                'token' => $token,
+                'message' => 'Logged in successfully'
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'The provided credentials are incorrect.',
+                'errors' => $e->errors()
+            ], 422);
+        }
     }
 
     public function register(Request $request)
