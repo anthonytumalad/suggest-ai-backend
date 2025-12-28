@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['https://suggest-ai-panel.vercel.app'],
+    'allowed_origins' => ['https://suggest-ai-console.vercel.app'],
 
     'allowed_origins_patterns' => [],
 
