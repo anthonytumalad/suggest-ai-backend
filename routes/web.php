@@ -1,30 +1,17 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\GoogleOAuthController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FormController;
-use App\Http\Controllers\Auth\GoogleOAuthController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/auth/google', [GoogleOAuthController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('/auth/google/callback', [GoogleOAuthController::class, 'handleGoogleCallback'])->name('google.callback');
 
-
-Route::get('/tlc/qrcode/{slug}', [FormController::class, 'qr'])
-    ->name('feedback.qrcode');
+Route::get('/tlc/qrcode/{slug}', [FormController::class, 'qr'])->name('feedback.qrcode');
 
 Route::middleware('ensure.sender')->group(function () {
-    Route::get('/tlc/form/{slug}', [FeedbackController::class, 'show'])
-        ->name('feedback.public');
-
-    Route::post('/tlc/form/{slug}/submit', [FeedbackController::class, 'store'])
-        ->name('feedback.store');
+    Route::get('/tlc/form/{slug}', [FeedbackController::class, 'show'])->name('feedback.public');
+    Route::post('/tlc/form/{slug}/submit', [FeedbackController::class, 'store'])->name('feedback.store');
 });
 
-// Route::get('/auth/google/callback', function() {
-//     try {
-//         $user = \Laravel\Socialite\Facades\Socialite::driver('google')->stateless()->user();
-//         dd($user);
-//     } catch (\Exception $e) {
-//         dd($e->getMessage(), $e->getTraceAsString());
-//     }
-// });

@@ -16,9 +16,9 @@ class GoogleOAuthController extends Controller
         $this->service = $service;
     }
 
-    public function redirectToGoogle(): RedirectResponse
+    public function redirectToGoogle(Request $request): RedirectResponse
     {
-        return $this->service->redirectToGoogle();
+        return $this->service->redirectToGoogle($request);
     }
 
     public function handleGoogleCallback(Request $request): RedirectResponse
