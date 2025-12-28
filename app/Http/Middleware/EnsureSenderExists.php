@@ -10,13 +10,15 @@ class EnsureSenderExists
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!Auth::guard('sender')->check()) {
-            // Store the full URL the user is trying to access
-            $request->session()->put('url.intended', $request->fullUrl());
+        if (! Auth::guard('sender')->check()) {
+            // Store intended URL in a query parameter
+            $loginUrl = route('google.login', [
+                'continue' => $request->fullUrl()
+            ]);
 
-            // Redirect to Google login
-            return redirect()->route('google.login');
+            return redirect($loginUrl);
         }
+
 
         return $next($request);
     }

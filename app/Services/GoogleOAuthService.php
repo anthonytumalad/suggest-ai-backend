@@ -39,7 +39,8 @@ class GoogleOAuthService
         // Log in
         Auth::guard('sender')->login($sender, true);
 
-        // Redirect to originally intended URL
-        return redirect()->intended('/');
+        $target = $request->query('continue') ?? '/';
+
+        return redirect($target);
     }
 }
