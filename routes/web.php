@@ -7,9 +7,6 @@ use App\Http\Controllers\FormController;
 use App\Http\Controllers\Auth\GoogleOAuthController;
 use Illuminate\Support\Facades\Log;
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/register', [AuthController::class, 'register']);
-
 Route::get('/auth/google', [GoogleOAuthController::class, 'redirectToGoogle'])
     ->name('google.login');
 

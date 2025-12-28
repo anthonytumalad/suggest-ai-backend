@@ -15,13 +15,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+
         $middleware->statefulApi();
+
         $middleware->alias([
             'ensure.sender' => \App\Http\Middleware\EnsureSenderExists::class,
         ]);
+
         $middleware->api(prepend: [
-            EnsureFrontendRequestsAreStateful::class,
+            // EnsureFrontendRequestsAreStateful::class,
         ]);
+        
         $middleware->web(append: [
             SubstituteBindings::class,
         ]);

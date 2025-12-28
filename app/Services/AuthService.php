@@ -18,24 +18,21 @@ class AuthService
      */
     public function authenticate(Request $request): User
     {
-        try {
-            Log::info('Login payload received', $request->all());
-            $request->validate([
-                'email' => 'required|email',
-                'password' => 'required',
-            ]);
-        } catch (ValidationException $e) {
-            Log::warning('Login validation failed', $e->errors());
-            throw $e;
-        }
+        Log::info('Login payload received', $request->all());
+
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
 
         $credentials = $request->only('email', 'password');
         $remember = $request->boolean('remember', false);
 
         if (!Auth::attempt($credentials, $remember)) {
             Log::warning('Login attempt failed', ['email' => $request->email]);
+
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                'email' => ['The provided credentials are incorrect.']
             ]);
         }
 
