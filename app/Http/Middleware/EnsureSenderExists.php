@@ -13,12 +13,9 @@ class EnsureSenderExists {
     public function handle(Request $request, Closure $next, $redirectTo = null)
     {
         if (! Auth::guard('sender')->check()) {
-            $intended = $this->resolveRedirect($request, $redirectTo)
-                ?? route('feedback.public', ['slug' => 'edi']);
+            $request->session()->put('url.intended', $request->fullUrl());
 
-            $loginUrl = route('google.login') . '?continue=' . urlencode($intended);
-
-            return redirect($loginUrl);
+            return redirect()->route('google.login');
         }
 
         return $next($request);
