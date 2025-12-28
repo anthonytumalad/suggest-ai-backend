@@ -20,11 +20,11 @@ Route::middleware('ensure.sender')->group(function () {
         ->name('feedback.store');
 });
 
-Route::get('/auth/google/callback', function() {
-    try {
-        $user = \Laravel\Socialite\Facades\Socialite::driver('google')->stateless()->user();
-        dd($user);
-    } catch (\Exception $e) {
-        dd($e->getMessage(), $e->getTraceAsString());
-    }
-});
+// Route::get('/auth/google/callback', function() {
+//     try {
+//         $user = \Laravel\Socialite\Facades\Socialite::driver('google')->stateless()->user();
+//         dd($user);
+//     } catch (\Exception $e) {
+//         dd($e->getMessage(), $e->getTraceAsString());
+//     }
+// });
