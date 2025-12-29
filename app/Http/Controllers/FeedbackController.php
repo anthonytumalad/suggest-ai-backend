@@ -19,6 +19,26 @@ class FeedbackController extends Controller
         $this->feedbackService = $feedbackService;
     }
 
+    public function getSummaryForChart(string $slug)
+{
+    $form = Form::where('slug', $slug)->firstOrFail();
+
+    $summary = $this->feedbackService->getSavedSummary($form);
+
+    if (!$summary) {
+        return response()->json([
+            'error' => 'No summary available'
+        ], 404);
+    }
+
+    return response()->json([
+        'summary_data'   => $summary->summary_data,
+        'feedback_count' => $summary->feedback_count,
+        'model'          => $summary->model,
+    ]);
+}
+
+
     public function show(string $slug)
     {
         $form = Form::where('slug', $slug)->firstOrFail();

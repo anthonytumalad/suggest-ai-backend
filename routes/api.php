@@ -21,6 +21,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
+    Route::get('/feedback-summary/{slug}/chart', [FeedbackController::class, 'getSummaryForChart']);
+
     //Forms routes
     Route::get('/forms/{slug}/feedbacks', [FormController::class, 'showWithFeedbacks']);
     Route::post('/forms/store', [FormController::class, 'store']);
