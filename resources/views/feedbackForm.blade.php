@@ -61,25 +61,9 @@
         <form
             action="{{ route('feedback.store', $form->slug) }}"
             method="POST"
-            x-data="{
-                isAnonymous: '1',
-                role: '',
-                rating: '',
-                feedback: '',
-                suggestions: '',
-                clearForm() {
-                    this.isAnonymous = '1';
-                    this.role = '';
-                    this.rating = '';
-                    this.feedback = '';
-                    this.suggestions = '';
-                    document.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
-                    document.querySelectorAll('textarea').forEach(t => t.value = '');
-                }
-            }"
             class="space-y-6"
         >
-            @csrf
+            <!-- @csrf -->
 
             {{-- Submission Preference --}}
             @if(!empty($form->submission_preference_enabled))
